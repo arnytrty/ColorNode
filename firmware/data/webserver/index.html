@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Color Node Configurator</title>
+
+        <link rel="stylesheet" href="css/index.css">
+        <link rel="stylesheet" href="css/header.css">
+        <link rel="stylesheet" href="css/blockly.css">
+    </head>
+
+    <body>
+        <div class="header">
+            <h1>Color Node Configurator</h1>
+            <a id="close">Close Webserver</a>
+            <a id="update">Update</a>
+        </div>
+
+        <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
+            <block type="stream">
+                <field name="duration">0</field>
+                <field name="color">#ff0000</field>
+                <field name="length">0</field>
+                <field name="faded">TRUE</field>
+            </block>
+        </xml>
+
+        <div id="blockly"></div>
+
+        <script src="js/index.js"></script>
+    </body>
+</html>

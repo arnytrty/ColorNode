@@ -1,0 +1,54 @@
+.header {
+    margin: 0;
+    padding: 0;
+
+    height: 50px;
+    line-height: 50px;
+
+    background-color: var(--header-background);
+}
+
+.header > h1 {
+    margin: 0;
+    padding: 0 20px;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+
+    float: left;
+
+    color: var(--header-text);
+
+    cursor: default;
+    user-select: none;
+}
+
+.header > a {
+    margin: 10px 20px;
+    padding: 0 15px;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+
+    float: right;
+
+    height: 30px;
+    line-height: 30px;
+
+    color: var(--header-text);
+
+    border: 1px solid var(--header-text);
+
+    cursor: pointer;
+    user-select: none;
+
+    transition: 0.1s ease-in-out;
+}
+
+.header > a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.header > a:active {
+    background-color: rgba(255, 255, 255, 0.5);
+}
