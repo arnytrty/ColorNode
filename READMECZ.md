@@ -37,3 +37,43 @@ Fungující jako tlačítko. Jednotlivé zařízení (alias Node) mají možnost
     * Výhody / Nevýhody
     * Příklady
 ---
+
+# PCB/DPS
+
+## Design
+
+## Chyby
+
+## ESP8266
+
+# Použité knihovny
+
+## FastLED
+
+## PlatformIO
+
+### Arduino
+
+### LittleFS
+
+### ESP8266WiFi
+
+### ESP8266WebServer
+
+### ESP8266mDNS
+
+## Vlastní
+
+### touch
+
+### webserver
+
+### colorengine
+
+# Způsob vykreslování animací
+
+## Princip
+
+## Výhody / Nevýhody
+
+## Příklady
