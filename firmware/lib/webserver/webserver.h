@@ -2,7 +2,7 @@
 #define webserver_h
 
 #define SSID "ESP8266-WIFI"
-#define PASSWORD "trtyjede"
+#define PASSWORD "ColorNodeIsBest"
 #define DNS "esp8266"
 
 /**

@@ -4,23 +4,39 @@ Seminární práce třetího ročníku, doufám že najdu čas a chuť tento pro
 Fungující jako tlačítko. Jednotlivé zařízení (alias Node) mají možnost mezi sebou komunikovat tím pádem stisknutí tlačítka (event) na jednom zařízení může změnit barvu druhého
 (dákový ovladać, wireless schodičový vypínač).
 
+## Používání
+
+Zařízení má 3 eventy. Stisk, dvojtej stisk a podržení (1s). Při každém eventu se na pásku začne vykreslovat nějaká animace kterou si lze nakonfigurovat.
+
+Pro nakonfigurování zařízení udělejte dlouhý stisk(10s). Zařízení na sobě spustí softAP na které se lze připojit (přihlašovací údaje jsou v `firmware/lib/webserver/webserver.h`).
+
+![wifi](assets/wifi.png)
+
+Zároveň na sobě spustí webserver, IP adresa je 192.168.4.1 Stačí jít do prohlížeče.
+
+![browser](assets/browser.png)
+
+Až se plocha načte, máme ve vrchní liště dvě tlačítka.
+Tlačítko Close Webser vypne softAP, webserver a ukkončí knfigurační mód.
+Tlačíkto Upload nahraje aktuální konfiguraci.
+
+Pod horní lištou máme workspace. zde můžeme upravovap připojovat a odpojovat jednotlivé bloky. Pro přidání bloku ho přetáhneme z listu na levé straně. Pro odebrání ho přesuneme na lištu.
+
+Jak přesně nastavení funguje je [tady](#způsob-vykreslování-animací)
+
+![page](assets/page.png)
+
 ## TODO
 
 - [X] rozchodit tlačítko close
 - [X] při spuštění automaticky načíst aktuální konfiguraci
 - [ ] udělat nový PCB na esp32 pico d4 (testování WIP)
 - [ ] předělat do FreeRTOS
+- [ ] při zápornýmu stretchi vykreslit z druhé strany, při záporným čase vykresli obráceně
 - [ ] umožnit ovládání ostatních node na jedné síti pomocí esp-now
 - [ ] udělat něco jako switch case aby jednotlivé eventy mohly fungovat jako přepínač
 - [ ] předdefinované animace
 - [ ] zbavit se FastLEDu
-
-rm
-
-- [ ] jak zařízení používat
-- [ ] jak tvořit animace
-- [ ] dopsat kapitoly
-- [ ] natočit video
 
 ## Obsah
 1.  [PCB/DPS](#pcb/dps)
@@ -162,19 +178,63 @@ Více [zde](https://developers.google.com/blockly).
 
 ## Princip
 
+Celý princip je založený na tom, jak adresovatelné pásky fungujou. Daly by se přirovnat k shift registrům zapisujeme data do první ledky, a ty se postupně přesunou do druhé, do třetí, do čtvrté...
 
+Každá část animace(budu referovat jako stream) má čtyři proměnné
+* Color(Barva)
+* Duration(Čas)
+* Stretch(kolik ledek to vykreslí)
+* Faded(jestli má udělat přechod)
+
+Celý funkčnost enginu se dá vyjádřit takto:
+*Vykresli X ledek v čase T o barvě C* s tím že vykresli opravdu znamená vykresli když je faded vypnutý,
+nebo udělej transition pokud je zapnutý. Můžeme si udělat takovýhle scénář:
+
+Náš pásek vypadá nějak takto (data pin mám připojený vpravo) a máme vykonat tento blok
+
+![before](assets/before.png)
+![stream](assets/stream.png)
+
+Věta pro colorengine by teda byla: *Vykresli 10 ledek v čase 500ms barvou červenou bez přechodu*. Tím pádem každých 50ms to vykreslí jednu ledku vpravo a posune původní data o ledku vedle. Nakonec po dokončení streamu pásek tedy bude vypadat takhle:
+
+![after](assets/after.png)
+
+Pokud bychom zašktrli faded tak by to každých 50ms vykreslilo ledku stejně jako předtím, ale místo vykreslení rouvnou červené to postupně vykreslí přechod s tím že poslední ledka bude červená:
+
+![after_faded](assets/after_faded.png)
 
 ## Výhody/Nevýhody
 
 Výhody
-* a
-* b
+* Celkem rychlé na výpočty, málo zatížení na procesor
+* Jednoduché na pochopení
+* Možnost udělat bez FastLEDu
+* Dostačující
 
 Nevýhody
-* d
-* d
+* Animace jen těžce můžou jezdit pozpátku
+* Omezená možnost animací
 
 ## Příklady
+
+Tento stream instantně překleslí celej pásek černou (vypne ledky)
+
+![none](assets/none.png)
+
+Streamy se dělají postupně, takže nejdřív to přechodem vykreslí červenou, přes červenou zelenou, přes zelenou modrou a pak se to opakuje.
+Takže to udělá duhu. Cyklus duhy bude 512ms * 3. Když chceme více barev můžeme přidat mezibarvy
+
+![rainbow_minimal](assets/rainbow_minimal.png)
+![rainbow](assets/rainbow.png)
+
+Toto nejdřív vykreslí 6 ledek ničím, potom 6 ledek s přechodem do bíle a 6 ledek s přechodem do ničeho.
+Tudíž to udělá něco jako výstřel a bude se opakovat každých 6 * 3 ledek.
+
+![shot](assets/shot.png)
+
+Jednotlivé streamy dávámě pod eventy. Když si vezmeme následující pobrázek, při stisknutí to začne vykreslovat duhu. Při dvojstisku to začne vykreslovat výstřely a při podržení to pásek vymaže.
+
+![workspace](assets/workspace.png)
 
 # Programování
 
