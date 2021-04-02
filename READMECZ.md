@@ -15,65 +15,185 @@ Fungující jako tlačítko. Jednotlivé zařízení (alias Node) mají možnost
 - [ ] předdefinované animace
 - [ ] zbavit se FastLEDu
 
+rm
+
+- [ ] jak zařízení používat
+- [ ] jak tvořit animace
+- [ ] dopsat kapitoly
+- [ ] natočit video
+
 ## Obsah
-1.  PCB/DPS
-    * Design
-    * Chyby
-    * ESP8266
-3. Použité knihovny
-    * FastLED
-    * PlatformIO
-        * Arduino
-        * LittleFS
-        * ESP8266WiFi
-        * ESP8266WebServer
-        * ESP8266mDNS
-    * Vlastní
-        * touch
-        * webserver
-        * colorengine
-5. Způsob vykreslování animací
-    * Princip
-    * Výhody / Nevýhody
-    * Příklady
+1.  [PCB/DPS](#pcb/dps)
+    * [Design](#design)
+    * [Chyby](#chyby)
+    * [ESP8266](#esp8266)
+3. [Použité knihovny](#použité-knihovny)
+    * [FastLED](#fastled)
+    * [PlatformIO](#platformio)
+        * [Arduino](#arduino)
+        * [LittleFS](#littlefs)
+        * [ESP8266WiFi](#esp8266wifi)
+        * [ESP8266WebServer](#esp8266webserver)
+        * [ESP8266mDNS](#esp8266mdns)
+    * [Vlastní](#vlastní)
+        * [touch](#touch)
+        * [webserver](#webserver)
+        * [colorengine](#colorengine)
+    * [Google Blockly](#google-blockly)
+5. [Způsob vykreslování animací](#způsob-vykreslování-animací)
+    * [Princip](#princip)
+    * [Výhody/Nevýhody](#výhody/nevýhody)
+    * [Příklady](#příklady)
+6. [Programování](#programování)
+    * [Postup](#postup)
+    * [Nastavení](#nastavení)
 ---
 
 # PCB/DPS
 
 ## Design
 
+Celý plošný spoj je prakticky jednostranný, sice má dvě vrstvy ale druhá se používá jako kapacitní senzor (je tam na to čip TPP223E), takže je možnost si plošnák doma vyleptat.
+Na druhé straně pak je samotný modul s UART převodníkem, EEPROMkou a konektorama.
+
+Další krok bude místo modulu tam dát ESP32-PICO-D4 což je SoC od Esspriffu který v sobě má 4MB flash, Má dvě jádra na až 240MHz, touch sensor má v sobě zabudovaný, má navíc bluetooh a umí toho spoustu dalšího.
+
 ## Chyby
 
+- Obsahuje starý název RGBase (tak se projet původně jmenoval)
+- LED dioda je technicky zbytečná, může se odstranit
+- EEPROM je taky zbytečná, zapisuji do přímo do flash modulu pomocí vnitřního filesystému
+- Rezistory R7, R8 jsou zbytečné
+- Enable u LDO můžeme připnout k Enable ESP8266
+- Lepší konektory
+- Potřeba vyřešit VCC a GND led pásku, nemůže napájet moc dlouhé led pásky
+- UART převodník zbytečný, slouží jen k programování
+
 ## ESP8266
+
+Obecně firma Esspriff dělá velice dobré procesory s mnoha periferiema za dost levnou cenu.
+Mají výbornou dokumentaci a všude je spousta návodů a je více způsobů jak procesor programovat,
+a jediné co vám k tomu stačí je UART převodník.
+
+To co jsem použil v designu není ale jejich procesor ale modul. Procesor jako takový nemá nějaké externí komponenty, jako anténu, krystal,
+kondíky apod. Modul co jsem použil se jmenuje ESP8266MOD nebo taky ESP12-F od firmy Ai-Thinker (datasheet [zde](https://docs.ai-thinker.com/_media/esp8266/docs/esp-12f_product_specification_en.pdf)).
+Obsahuje 4MB SPI flash která dosáhne až 80Mhz. Je jedno který modul se použije, flash vždy jde programovat přes uart (pomocí esptool).
+
+Já jsem pro programování nakonec použil PlatformIO což je extension to VS Code. Jednotlivé api se trochu liší ale celkově jsou podobné.
+Obsahuje Arduino Core což umožňuje ovládat piny pomocí předdefinovaných funkcí a další věci (materiály [zde](https://docs.platformio.org/en/latest/platforms/espressif8266.html), [zde](https://www.espressif.com/sites/default/files/documentation/esp8266-technical_reference_en.pdf) a [zde](https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf)).
 
 # Použité knihovny
 
 ## FastLED
 
+FastLED je Arduino knihovna která umožňuje ovládat adresovatelné led pásky ze všech možných procesorů, které Arduino podporuje. Je speciálně optimalizovaná právě pro ESP8266 a ESP32.
+
+Funguje tak že vytvoří buffer do kterého můžete zapisovat barvy po kanálech RGB, má i barvy předdefinované a podporuje velkou škálu pásků (více [zde](https://github.com/FastLED/FastLED)).
+
+Dokonce jsem napsal cheat který umožňuje ovládat RGBW pásky SK6812 ([tady](https://github.com/arnytrty/FastLED)).
+
 ## PlatformIO
+
+PlatformIO je extension do VS Code který umožnuje programovat procesory nejrůznějších typů v jednom prostředí a s několika API - já jsem si vybral Arduino Core, protože jsem se znažil to napsat v RTOSu od Espriffu, ale narazil jsem na bug v jejich novém kódu a nebyl jsem schopnej ho zpravit.
+
+PlatformIO mi dalo přístup jak k oficiálním knihovnám pro ESP8266 tak i Arduinu a jejich komunitním knihovnám.
 
 ### Arduino
 
+Arduino je API které přidává set jednoduchých funkcí na ovládání procesoru jako například nastavení pinu, čtení hodnot, Stringy, apod.. (jsou to vlastně makra).
+
+Vice [zde](https://www.arduino.cc/reference/en/).
+
 ### LittleFS
+
+Knihovna přímo pro ESP8266 - součástí PlatformIO. Dokáže část flashe přiřadit filesystému do kterého můžeme zapisovat, číst, prožkoumávat pomocí C/C++ funkcí, popřípadě ho předem naprogramovat.
+
+Má ale jednu malou nevýhodu, více v sekci [tady](#google-blockly).
 
 ### ESP8266WiFi
 
+Součást Arduina pro ESP8266 na ovládání WiFi. Umožnuje se připojit nebo vytvořit softAP. atd.
+
 ### ESP8266WebServer
+
+Součást Arduina pro ESP8266. Umožňuje vytvořit jednoduchý webserver a ovládat ho.
 
 ### ESP8266mDNS
 
+Součást Arduina pro ESP8266. Dokáže vytvořit DNS server apřiřadit mu adresy.
+
 ## Vlastní
+
+Tyhle jsem napsal já. Celá dokumentace v kódu.
 
 ### touch
 
+Tato knihovna automaticky detekuje předem definovaný pin a dokáže rozpoznat mezi stisknutím, dvojtým stisknutím,
+krátkým a dlouhým podržením. Nastavíte jí callbacky které pak zavolá a jediné co musíte udělat je jí pravidelně volat v loopu.
+
 ### webserver
 
+Toto dokáže zapnout/vypnout konfigurační webserver a softAP. SoftAP můžete nastavit jméno a heslo, dokonce to mělo mít i mDNS ale tu jsem ještě nerozchodil. Webserver je jednoduchý, napsal jsem si vlastní address handler kterým jsem propojil složku `data/www`.
+Bohužel neumí php requesty, nebo jsem minimálně nenašel jak, takže data posílám přes adrey.
+
+Při programování jsem zjistil že soubory mají nějakou maximální velikost, což jsem vyřešil [tady](#google-blockly).
+
 ### colorengine
+
+Toto zařizuje vykreslování animací za pásek,stará se to o jejich pořadí, časy, a lineární transition.
+
+Jak animace fungují je popsáno v sekci [tady](#způsob-vykreslování-animací).
+
+## Google Blockly
+
+Google Blockly je javascriptová knihovna která umožňuje intuitivní programování online (neboli blokové programování).
+Můžete si vytvořit vlastní bloky a pravidla jak je k sobě připojovat a napsat si vlastní způsob,
+jak data budou interpretována. Díky tomu jsem byl schopen udělat jednuduché prostředí kde zařízení konfigurovat.
+
+Při nahrávání do [filesytém](#littlefs) jsem ale zjistil že `blockly.min.js` je moc velké.
+Maximální velikost souboru je zhruba 50KB a blockly mělo 800KB. Rozsekal jsem proto blockly na menší díly,
+které si prohlížeč na konci spojí, a spustí ve správném pořadí. Je to taky důvod proč při spuštění
+webové strány to píše loading blockly part...
+
+
+Více [zde](https://developers.google.com/blockly).
 
 # Způsob vykreslování animací
 
 ## Princip
 
-## Výhody / Nevýhody
+
+
+## Výhody/Nevýhody
+
+Výhody
+* a
+* b
+
+Nevýhody
+* d
+* d
 
 ## Příklady
+
+# Programování
+
+## Popis
+Pro programování potřebujete PlatformIO extension do VS Code. Pro nové instsalace se musí vytvořit nový projet aby si PlatformIO stáho potřebné knihovny.
+Board je ESP12-F a platforma je Arduino. Nasledovně můžete projekt smazat a otevřit pomocí
+VS Code složku firmware. PlatformIO se automaticky načte a nastaví compiler.
+
+Potom stačí připojit zařízení a na dolní liště pustit upload. Následovně je potřeba otevřit PIO CLI(taky na dolní liště) a napsat příkaz `pio run -t uploadfs`. Tento příkaz zkomprimuje a uploadne složku data do modulu do jeho filesystému, více níže. A to je celé..
+
+## Nastavení
+Jak jsem se zmíníl výše zařizení má 4MB flash a z toho můžeme nějakou část přidělit [filesystému](#littlefs).
+Já jsem procesor rozdělil na dvě půlky, kde 2MB je C/C++ kód a druhá půlka je pro filesystém.
+Stačilo do configu `platformio.ini` přidat:
+```
+board_build.filesystem = littlefs
+board_build.ldscript = eagle.flash.4m2m.ld
+```
+
+Normálně esp8266 používá SPIFFS což je od esspriffu, ale je to celkem zastaralé, proto jsem se přesunul do LittleFS který je vyvíjen komunitou (více [zde](https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#filesystem)).
+
+U filesystému jsem narazil ještě na jednu chybu kterou jsem popsal u [Google Blockly](#google-blockly)
